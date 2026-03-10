@@ -14,22 +14,19 @@ export default function BottomNav() {
   };
 
   const navItems = [
-    { id: 'market',    label: 'Маркет',     icon: ShoppingBag },
-    { id: 'my-gifts',  label: 'Мои подарки', icon: Gift },
-    { id: 'seasons',   label: 'Сезоны',      icon: Star },
-    { id: 'profile',   label: 'Профиль',     icon: User },
+    { id: 'market',   label: 'Маркет',      icon: ShoppingBag },
+    { id: 'my-gifts', label: 'Мои подарки', icon: Gift },
+    { id: 'seasons',  label: 'Сезоны',      icon: Star },
+    { id: 'profile',  label: 'Профиль',     icon: User },
   ] as const;
 
   return (
-    /*
-     * bottom-0: sits flush with screen bottom edge so it doesn't float
-     * above the Telegram close button area.
-     * pb-safe: pads for iOS home indicator via safe-area-inset-bottom.
-     * z-[100]: below drawers (z-[2000]) but above regular content (z-10).
-     */
+    // zIndex: 40 через inline style — гарантированно ниже Drawer (inline zIndex: 2000/2001)
+    // и SyncModal (inline zIndex: 3000/3001), но выше обычного контента страницы
     <nav
-      className="fixed bottom-0 left-0 right-0 bg-[#1c1c1e]/90 backdrop-blur-xl border-t border-white/10 shadow-2xl flex items-center justify-around px-2 z-[100]"
+      className="fixed bottom-0 left-0 right-0 bg-[#1c1c1e]/90 backdrop-blur-xl border-t border-white/10 flex items-center justify-around px-2"
       style={{
+        zIndex: 40,
         paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 8px)',
         paddingTop: '8px',
         height: 'calc(64px + max(env(safe-area-inset-bottom, 0px), 8px))',
@@ -41,20 +38,10 @@ export default function BottomNav() {
           <button
             key={id}
             onClick={() => handleNav(id)}
-            className="flex flex-col items-center justify-center gap-1 min-w-[60px] flex-1 active:opacity-70 transition-opacity py-1"
+            className="flex flex-col items-center justify-center gap-1 flex-1 active:opacity-70 transition-opacity py-1"
           >
-            <Icon
-              className={clsx(
-                'w-6 h-6 transition-colors',
-                isActive ? 'text-[#2382ff]' : 'text-[#7d7d85]'
-              )}
-            />
-            <span
-              className={clsx(
-                'text-[11px] font-medium transition-colors',
-                isActive ? 'text-[#2382ff]' : 'text-[#7d7d85]'
-              )}
-            >
+            <Icon className={clsx('w-6 h-6 transition-colors', isActive ? 'text-[#2382ff]' : 'text-[#7d7d85]')} />
+            <span className={clsx('text-[11px] font-medium transition-colors', isActive ? 'text-[#2382ff]' : 'text-[#7d7d85]')}>
               {label}
             </span>
           </button>
