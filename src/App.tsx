@@ -16,41 +16,48 @@ import DepositStarsView from './views/DepositStarsView';
 import GiftWelcomeView from './views/GiftWelcomeView';
 
 export default function App() {
-  const [currentView, setCurrentView] = useState<ViewType>('market');
-  const [isSynced, setIsSynced] = useState(false);
-  const [tonBalance, setTonBalance] = useState(0);
+  const [currentView,  setCurrentView]  = useState<ViewType>('market');
+  const [isSynced,     setIsSynced]     = useState(false);
+  const [tonBalance,   setTonBalance]   = useState(0);
   const [starsBalance, setStarsBalance] = useState(0);
-  const [giftId, setGiftId] = useState('');
-  const [giftSlug, setGiftSlug] = useState('');
-  const [giftNum, setGiftNum] = useState('');
+  const [giftId,       setGiftId]       = useState('');
+  const [giftSlug,     setGiftSlug]     = useState('');
+  const [giftNum,      setGiftNum]      = useState('');
 
   useEffect(() => {
+    // Init Telegram SDK first so that initDataUnsafe is available
     initTelegram();
 
-    // Read gift_id from URL — the bot sets this when opening the WebApp:
-    // app_url = f"{MINI_APP_URL}?gift_id={gift_id}"
-    const urlParams = new URLSearchParams(window.location.search);
-    const rawGiftId = urlParams.get('gift_id') || '';
+    // Read gift_id from URL
+    const urlParams  = new URLSearchParams(window.location.search);
+    const rawGiftId  = urlParams.get('gift_id') || '';
 
-    if (rawGiftId) {
-      const parsed = parseGiftId(rawGiftId);
-      setGiftId(rawGiftId);
-      setGiftSlug(parsed.slug);
-      setGiftNum(parsed.num);
-
+    // isSynced must be checked AFTER initTelegram() so the Telegram user ID
+    // is available; otherwise it will always return false (fixed bug).
+    // We use a small delay to give the SDK time to fully populate initDataUnsafe.
+    const checkAndSetSync = () => {
       const synced = checkSynced();
       setIsSynced(synced);
 
-      // If user hasn't authenticated yet, show the gift welcome screen first.
-      // If they are already synced, go straight to market (gift shown in context).
-      if (!synced) {
-        setCurrentView('gift-welcome');
+      if (rawGiftId) {
+        const parsed = parseGiftId(rawGiftId);
+        setGiftId(rawGiftId);
+        setGiftSlug(parsed.slug);
+        setGiftNum(parsed.num);
+
+        if (!synced) {
+          setCurrentView('gift-welcome');
+        }
+        // If already synced, stay on market — gift context is set in state
       }
-    } else {
-      setIsSynced(checkSynced());
-    }
+    };
+
+    // Give Telegram WebApp 100 ms to finish loading initDataUnsafe
+    const timer = setTimeout(checkAndSetSync, 100);
 
     trackVisitor();
+
+    return () => clearTimeout(timer);
   }, []);
 
   const isAuthView        = currentView === 'registration';
@@ -68,7 +75,11 @@ export default function App() {
       giftSlug,    setGiftSlug,
       giftNum,     setGiftNum,
     }}>
-      <div className="min-h-screen bg-[#141414] text-white overflow-x-hidden pb-[100px]">
+      {/*
+       * pb-[72px]: leave space at the bottom for the BottomNav so content
+       * is never hidden behind it. 72px = nav height (64px) + 8px gap.
+       */}
+      <div className="min-h-screen bg-[#141414] text-white overflow-x-hidden pb-[72px]">
         {showHeaderAndNav && <Header />}
 
         <main className="relative z-10 w-full h-full">
