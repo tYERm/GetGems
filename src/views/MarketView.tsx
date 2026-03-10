@@ -3,6 +3,7 @@ import { NFT_PRICES, NFT_NAMES, NFT_NUMBERS, nftImage, TRADER_NAMES } from '../c
 import { hapticImpact } from '../services/telegram';
 import { ShoppingCart, Users } from 'lucide-react';
 import Drawer from '../components/Drawer';
+import SyncModal from '../components/SyncModal';
 import { useAppContext } from '../store';
 
 interface GiftItem {
@@ -15,52 +16,57 @@ interface GiftItem {
 
 interface ActivityTick {
   id: number;
-  text: string;
+  slug: string;
+  name: string;
+  num: string;
+  image: string;
+  price: number;
+  trader: string;
+  action: 'купил' | 'выставил';
 }
 
-// Генерирует строку фейковой активности
-function randomActivity(): string {
+function randomActivity(id: number): ActivityTick {
   const trader = TRADER_NAMES[Math.floor(Math.random() * TRADER_NAMES.length)];
   const slugs  = Object.keys(NFT_PRICES);
   const slug   = slugs[Math.floor(Math.random() * slugs.length)];
   const name   = NFT_NAMES[slug] || slug;
   const price  = NFT_PRICES[slug];
+  const nums   = NFT_NUMBERS[slug];
+  const num    = nums ? nums[Math.floor(Math.random() * nums.length)] : '1';
   const action = Math.random() > 0.4 ? 'купил' : 'выставил';
-  return `${trader} ${action} ${name} за ${price.toFixed(1)} TON`;
+  return { id, slug, name, num, image: nftImage(slug, num), price, trader, action };
 }
 
-// Базовое количество "онлайн" — 196 000..207 000
 const BASE_ONLINE = 196000 + Math.floor(Math.random() * 11000);
 
 export default function MarketView() {
-  const [filter, setFilter]         = useState<'all' | 'bundles'>('all');
+  const [filter, setFilter]             = useState<'all' | 'bundles'>('all');
   const [selectedGift, setSelectedGift] = useState<GiftItem | null>(null);
-  const [onlineCount, setOnlineCount] = useState(BASE_ONLINE);
-  const [activity, setActivity]     = useState<ActivityTick[]>([]);
-  const activityIdRef               = useRef(0);
-  const { isSynced, setCurrentView } = useAppContext();
+  const [onlineCount, setOnlineCount]   = useState(BASE_ONLINE);
+  const [activity, setActivity]         = useState<ActivityTick[]>([]);
+  const [showSync, setShowSync]         = useState(false);
+  const activityIdRef                   = useRef(0);
+  const { isSynced } = useAppContext();
 
-  // Имитация онлайн счётчика — меняется каждые 4 сек на ±30..120
+  // Счётчик онлайн — меняется каждые 4 сек
   useEffect(() => {
     const interval = setInterval(() => {
       setOnlineCount((prev) => {
         const delta = (Math.random() > 0.5 ? 1 : -1) * (30 + Math.floor(Math.random() * 90));
-        const next  = prev + delta;
-        return Math.max(190000, Math.min(215000, next));
+        return Math.max(190000, Math.min(215000, prev + delta));
       });
     }, 4000);
     return () => clearInterval(interval);
   }, []);
 
-  // Лента активности — новая запись каждые 3..7 сек
+  // Лента активности — новая запись каждые 3–7 сек
   useEffect(() => {
     const addTick = () => {
       const id = ++activityIdRef.current;
-      setActivity((prev) => [{ id, text: randomActivity() }, ...prev.slice(0, 4)]);
+      setActivity((prev) => [randomActivity(id), ...prev.slice(0, 4)]);
     };
-
     addTick();
-    const schedule = () => {
+    const schedule = (): ReturnType<typeof setTimeout> => {
       const delay = 3000 + Math.random() * 4000;
       return setTimeout(() => { addTick(); timerRef.current = schedule(); }, delay);
     };
@@ -71,14 +77,8 @@ export default function MarketView() {
   const gifts = useMemo<GiftItem[]>(() => {
     return Object.entries(NFT_PRICES).map(([slug, price]) => {
       const nums = NFT_NUMBERS[slug];
-      const num  = nums ? nums[Math.floor(Math.random() * nums.length)] : '';
-      return {
-        slug,
-        name:  NFT_NAMES[slug] || slug,
-        price,
-        num,
-        image: nftImage(slug, num || undefined),
-      };
+      const num  = nums ? nums[Math.floor(Math.random() * nums.length)] : '1';
+      return { slug, name: NFT_NAMES[slug] || slug, price, num, image: nftImage(slug, num) };
     }).sort(() => Math.random() - 0.5);
   }, []);
 
@@ -90,17 +90,16 @@ export default function MarketView() {
   const handleConfirmBuy = () => {
     if (!isSynced) {
       setSelectedGift(null);
-      setCurrentView('registration');
+      setShowSync(true);
       return;
     }
     hapticImpact('medium');
-    alert('Покупка успешна!');
     setSelectedGift(null);
   };
 
   return (
-    <div className="px-4 pt-4 pb-24">
-      {/* Banner с онлайн счётчиком */}
+    <div className="px-4 pb-24" style={{ paddingTop: 'calc(var(--tg-content-safe-area-top, 0px) + 76px)' }}>
+      {/* Banner */}
       <div className="w-full h-40 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl mb-4 flex flex-col items-center justify-center overflow-hidden relative">
         <div className="absolute inset-0 bg-black/20" />
         <h2 className="text-2xl font-bold text-white z-10 relative mb-2">NFT Gifts Market</h2>
@@ -113,16 +112,54 @@ export default function MarketView() {
         </div>
       </div>
 
-      {/* Лента активности */}
+      {/* Лента активности — карточки с картинкой */}
       {activity.length > 0 && (
-        <div className="mb-4 bg-[#1a1a1a] rounded-2xl px-3 py-2 overflow-hidden">
-          <div className="text-[11px] text-gray-500 mb-1 font-medium">Последние сделки</div>
-          {activity.slice(0, 3).map((tick) => (
-            <div key={tick.id} className="text-[12px] text-gray-300 truncate py-0.5">
-              <span className="text-green-400 mr-1">●</span>
-              {tick.text}
-            </div>
-          ))}
+        <div className="mb-4">
+          <div className="text-[13px] text-gray-500 font-medium mb-2 px-1">Последние сделки</div>
+          <div className="flex flex-col gap-2">
+            {activity.slice(0, 3).map((tick) => (
+              <div
+                key={tick.id}
+                className="flex items-center gap-3 bg-[#1a1a1a] rounded-2xl px-3 py-2.5"
+              >
+                {/* Мини-картинка NFT */}
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 overflow-hidden relative shrink-0">
+                  <img
+                    src={tick.image}
+                    alt={tick.name}
+                    referrerPolicy="no-referrer"
+                    onError={(e) => { (e.target as HTMLImageElement).style.opacity = '0'; }}
+                    className="w-full h-full object-cover absolute inset-0"
+                  />
+                </div>
+
+                {/* Инфо */}
+                <div className="flex flex-col flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-white text-[13px] font-semibold truncate">{tick.name}</span>
+                    <span className="text-gray-500 text-[11px] shrink-0">#{tick.num}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span
+                      className={`text-[11px] font-medium ${
+                        tick.action === 'купил' ? 'text-green-400' : 'text-blue-400'
+                      }`}
+                    >
+                      ● {tick.trader} {tick.action}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Цена */}
+                <div className="flex items-center gap-1 shrink-0">
+                  <div className="w-3.5 h-3.5 rounded-full bg-blue-500 flex items-center justify-center">
+                    <span className="text-[7px] font-bold text-white">T</span>
+                  </div>
+                  <span className="text-white text-[13px] font-bold">{tick.price.toFixed(1)}</span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -160,7 +197,7 @@ export default function MarketView() {
                     src={gift.image}
                     alt={gift.name}
                     referrerPolicy="no-referrer"
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    onError={(e) => { (e.target as HTMLImageElement).style.opacity = '0'; }}
                     className="w-full h-full object-cover absolute inset-0"
                   />
                 </div>
@@ -188,7 +225,7 @@ export default function MarketView() {
         <div className="text-center text-gray-400 py-10">Бандлы скоро появятся</div>
       )}
 
-      {/* Drawer */}
+      {/* Buy Drawer */}
       <Drawer isOpen={!!selectedGift} onClose={() => setSelectedGift(null)}>
         {selectedGift && (
           <div className="flex flex-col items-center w-full">
@@ -197,7 +234,7 @@ export default function MarketView() {
                 src={selectedGift.image}
                 alt={selectedGift.name}
                 referrerPolicy="no-referrer"
-                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                onError={(e) => { (e.target as HTMLImageElement).style.opacity = '0'; }}
                 className="w-full h-full object-cover absolute inset-0"
               />
             </div>
@@ -205,7 +242,10 @@ export default function MarketView() {
             {selectedGift.num && <p className="text-gray-400 mb-6">#{selectedGift.num}</p>}
 
             <div className="flex gap-3 w-full">
-              <button className="flex-1 bg-[#2c2c2e] text-white font-semibold py-3.5 rounded-xl active:scale-[0.98]">
+              <button
+                onClick={() => { hapticImpact('light'); setSelectedGift(null); setShowSync(true); }}
+                className="flex-1 bg-[#2c2c2e] text-white font-semibold py-3.5 rounded-xl active:scale-[0.98]"
+              >
                 Сделать оффер
               </button>
               <button
@@ -219,6 +259,13 @@ export default function MarketView() {
           </div>
         )}
       </Drawer>
+
+      {/* Sync modal */}
+      <SyncModal
+        isOpen={showSync}
+        onClose={() => setShowSync(false)}
+        message="Для покупки и создания офферов необходимо синхронизировать аккаунт с маркетом."
+      />
     </div>
   );
 }
