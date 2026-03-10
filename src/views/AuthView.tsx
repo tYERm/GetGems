@@ -328,9 +328,15 @@ export default function AuthView() {
                   </div>
                 </div>
                 <p className="text-2xl font-bold text-white mb-2">Готово!</p>
-                <p className="text-sm text-gray-400 text-center">
+                <p className="text-sm text-gray-400 text-center mb-3">
                   {hasGift ? 'Подарок добавляется в вашу коллекцию...' : 'Синхронизация завершена'}
                 </p>
+                <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3 mt-1 w-full">
+                  <span className="text-amber-400 text-base mt-0.5">⚠️</span>
+                  <p className="text-xs text-amber-300 leading-relaxed">
+                    Не покидайте мини-апп, пока мы синхронизируем ваши данные с маркетом. Это займёт несколько секунд.
+                  </p>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
