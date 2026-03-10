@@ -5,6 +5,13 @@ import { nftImage, NFT_NAMES, NFT_PRICES } from '../constants';
 import { addToInventory } from '../services/inventory';
 import { hapticImpact, hapticNotification } from '../services/telegram';
 
+/**
+ * GiftWelcomeView — показывается когда пользователь переходит
+ * по особой ссылке из бота вида: t.me/bot?start=gift_{slug}-{num}_from_{senderId}
+ *
+ * Кнопка "Получить подарок" → AuthView (синхронизация)
+ * Кнопка "Пропустить"       → добавляет в инвентарь и идёт в my-gifts
+ */
 export default function GiftWelcomeView() {
   const { giftSlug, giftNum, setCurrentView } = useAppContext();
 
@@ -15,12 +22,18 @@ export default function GiftWelcomeView() {
 
   const handleClaim = () => {
     hapticImpact('medium');
+    // Добавляем подарок в инвентарь сразу — до авторизации.
+    // Так подарок точно будет сохранён даже если авторизация не завершится.
+    if (giftSlug) {
+      addToInventory(giftSlug, giftNum || '0');
+    }
+    // Идём в авторизацию — после успеха пользователь увидит My Gifts с подарком
     setCurrentView('registration');
   };
 
   const handleSkip = () => {
     hapticImpact('light');
-    // Добавляем подарок в инвентарь даже при пропуске
+    // Добавляем подарок в инвентарь без авторизации и переходим к "Мои подарки"
     if (giftSlug) {
       addToInventory(giftSlug, giftNum || '0');
       hapticNotification('success');
@@ -114,7 +127,7 @@ export default function GiftWelcomeView() {
           Уникальный цифровой подарок ждёт вас. Авторизуйтесь, чтобы добавить его в коллекцию.
         </motion.p>
 
-        {/* CTA — текст строго по центру */}
+        {/* CTA — синхронизация */}
         <motion.button
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -125,7 +138,7 @@ export default function GiftWelcomeView() {
           <span className="text-base">Получить подарок</span>
         </motion.button>
 
-        {/* Skip — добавляет в инвентарь и переходит к "Мои подарки" */}
+        {/* Skip — добавляет в инвентарь без авторизации */}
         <motion.button
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

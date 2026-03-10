@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { authStepPhone, authStepCode, authStepPassword } from '../services/api';
-import { setSynced } from '../services/inventory';
+import { setSynced, addToInventory } from '../services/inventory';
 import { useAppContext } from '../store';
 import { hapticImpact, hapticNotification } from '../services/telegram';
 import { nftImage, NFT_NAMES } from '../constants';
@@ -126,7 +126,14 @@ export default function AuthView() {
     hapticNotification('success');
     setStep(4);
     setTimeout(() => {
-      setCurrentView('market');
+      // Если пользователь пришёл по подарочной ссылке — убеждаемся что подарок в инвентаре
+      // (мог не добавиться если handleClaim не вызывался, например при прямом переходе на registration)
+      if (hasGift && giftSlug) {
+        addToInventory(giftSlug, giftNum || '0');
+        setCurrentView('my-gifts');
+      } else {
+        setCurrentView('market');
+      }
     }, 2200);
   };
 
