@@ -28,9 +28,16 @@ export default function Header() {
   };
 
   return (
-    // mt-3 — небольшой отступ сверху чтобы поле было чуть ниже
-    // НЕ sticky — двигается со скроллом страницы
-    <div className="px-4 mt-3 mb-2">
+    <div
+      className="px-4"
+      style={{
+        position: 'fixed',
+        top: 'calc(var(--tg-content-safe-area-top, 0px) + 16px)',
+        left: 0,
+        right: 0,
+        zIndex: 50,
+      }}
+    >
       <div className="relative">
         {/* Main balance pill */}
         <div className="flex items-center gap-2 bg-[#1a1a1a] border border-white/8 rounded-2xl px-4 py-2.5 shadow-md">
