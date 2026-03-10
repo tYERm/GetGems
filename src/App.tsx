@@ -43,7 +43,7 @@ export default function App() {
 
       if (!tgUid && attempts < maxAttempts) {
         attempts++;
-        setTimeout(resolve, 100);
+        setTimeout(resolve, 200);
         return;
       }
 
@@ -81,7 +81,7 @@ export default function App() {
       giftNum,     setGiftNum,
     }}>
       <div className="min-h-screen bg-[#141414] text-white overflow-x-hidden pb-[72px]">
-        {showHeaderAndNav && <Header />}
+        {currentView === 'market' && <Header />}
 
         <main className="relative z-10 w-full h-full">
           {currentView === 'market'        && <MarketView />}
