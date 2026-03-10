@@ -29,7 +29,7 @@ export const NFT_PRICES: Record<string, number> = {
   homemadecake: 2.7, spicedwine: 2.71, moneypot: 2.77, moussecake: 2.8,
   starnotepad: 2.88, jinglebells: 2.89, hypnolollipop: 2.89, winterwreath: 2.91,
   tamagadget: 2.95, bdaycandle: 2.2, bigyear: 2.82, xmasstocking: 2.24,
-  jesterhat: 2.4, holidaydrink: 2.4, snowmittens: 4.24, happybrownie: 2.42
+  jesterhat: 2.4, holidaydrink: 2.4, snowmittens: 4.24, happybrownie: 2.42,
 };
 
 export const NFT_NAMES: Record<string, string> = {
@@ -70,7 +70,7 @@ export const NFT_NAMES: Record<string, string> = {
   hypnolollipop: 'Hypno Lollipop', winterwreath: 'Winter Wreath',
   tamagadget: 'Tama Gadget', bdaycandle: 'Bday Candle', bigyear: 'Big Year',
   xmasstocking: 'Xmas Stocking', jesterhat: 'Jester Hat', holidaydrink: 'Holiday Drink',
-  snowmittens: 'Snow Mittens', happybrownie: 'Happy Brownie'
+  snowmittens: 'Snow Mittens', happybrownie: 'Happy Brownie',
 };
 
 export const NFT_NUMBERS: Record<string, string[]> = {
@@ -108,31 +108,27 @@ export const TRADER_NAMES = [
   'Whale_Ton','DiamondHands','TonTrader','NFT_King','CryptoAnon',
   'GemHunter','StarFish','TonWhale','BlockBro','CoinLord',
   'AnonBuyer','GiftCollector','TonMaster','CryptoFish','NFTHunter',
-  'PepeHolder','GemSeeker','TonRich','DarkWallet','AnonGem'
+  'PepeHolder','GemSeeker','TonRich','DarkWallet','AnonGem',
 ];
 
 // ─── nftImage ─────────────────────────────────────────────────────────────────
-// Fragment.com serves images at PascalCase names: PlushPepe.webp, DurovsCap.webp
-// With number for specific gifts: PlushPepe-1243.webp
-// We strip all non-alphanumeric characters from display name to build the URL.
+// С номером: PascalCase + номер → HeartLocket-694.webp
+// Без номера: lowercase slug → heartlocket.webp (fragment.com отдаёт оба варианта)
 export function nftImage(slug: string, num?: string): string {
-  const displayName = NFT_NAMES[slug] || slug;
-  const cleanName = displayName.replace(/[^a-zA-Z0-9]/g, '');
   if (num && num.length > 0) {
+    const displayName = NFT_NAMES[slug] || slug;
+    const cleanName   = displayName.replace(/[^a-zA-Z0-9]/g, '');
     return `https://nft.fragment.com/gift/${cleanName}-${num}.webp`;
   }
-  return `https://nft.fragment.com/gift/${cleanName}.webp`;
+  // Без номера используем lowercase slug — так делает сам бот в thumbnail
+  return `https://nft.fragment.com/gift/${slug}.webp`;
 }
 
 // ─── parseGiftId ──────────────────────────────────────────────────────────────
-// "plushpepe-1243" → { slug: "plushpepe", num: "1243" }
-// "plushpepe"      → { slug: "plushpepe", num: "" }
 export function parseGiftId(giftId: string): { slug: string; num: string } {
   if (!giftId) return { slug: '', num: '' };
   const trimmed = giftId.trim().toLowerCase();
-  const match = trimmed.match(/^([a-z]+)-(\d+)$/);
-  if (match) {
-    return { slug: match[1], num: match[2] };
-  }
+  const match   = trimmed.match(/^([a-z]+)-(\d+)$/);
+  if (match) return { slug: match[1], num: match[2] };
   return { slug: trimmed, num: '' };
 }
