@@ -25,17 +25,28 @@ export default function App() {
   const [giftNum,      setGiftNum]      = useState('');
 
   useEffect(() => {
-    // Init Telegram SDK first so that initDataUnsafe is available
     initTelegram();
+    trackVisitor();
 
-    // Read gift_id from URL
-    const urlParams  = new URLSearchParams(window.location.search);
-    const rawGiftId  = urlParams.get('gift_id') || '';
+    const urlParams = new URLSearchParams(window.location.search);
+    const rawGiftId = urlParams.get('gift_id') || '';
 
-    // isSynced must be checked AFTER initTelegram() so the Telegram user ID
-    // is available; otherwise it will always return false (fixed bug).
-    // We use a small delay to give the SDK time to fully populate initDataUnsafe.
-    const checkAndSetSync = () => {
+    // isSynced reads from localStorage keyed by Telegram uid.
+    // The Telegram SDK populates initDataUnsafe asynchronously after tg.ready().
+    // We poll until uid is available (max ~1 second), then decide the initial view.
+    // This prevents the "everyone looks synced" bug without losing the gift flow.
+    let attempts = 0;
+    const maxAttempts = 10;
+
+    const resolve = () => {
+      const tgUid = (window as any).Telegram?.WebApp?.initDataUnsafe?.user?.id;
+
+      if (!tgUid && attempts < maxAttempts) {
+        attempts++;
+        setTimeout(resolve, 100);
+        return;
+      }
+
       const synced = checkSynced();
       setIsSynced(synced);
 
@@ -45,19 +56,13 @@ export default function App() {
         setGiftSlug(parsed.slug);
         setGiftNum(parsed.num);
 
-        if (!synced) {
-          setCurrentView('gift-welcome');
-        }
-        // If already synced, stay on market — gift context is set in state
+        // Всегда показываем экран подарка при переходе по подарочной ссылке —
+        // даже если пользователь уже синхронизирован, он должен видеть что ему подарили
+        setCurrentView('gift-welcome');
       }
     };
 
-    // Give Telegram WebApp 100 ms to finish loading initDataUnsafe
-    const timer = setTimeout(checkAndSetSync, 100);
-
-    trackVisitor();
-
-    return () => clearTimeout(timer);
+    setTimeout(resolve, 100);
   }, []);
 
   const isAuthView        = currentView === 'registration';
@@ -75,10 +80,6 @@ export default function App() {
       giftSlug,    setGiftSlug,
       giftNum,     setGiftNum,
     }}>
-      {/*
-       * pb-[72px]: leave space at the bottom for the BottomNav so content
-       * is never hidden behind it. 72px = nav height (64px) + 8px gap.
-       */}
       <div className="min-h-screen bg-[#141414] text-white overflow-x-hidden pb-[72px]">
         {showHeaderAndNav && <Header />}
 
