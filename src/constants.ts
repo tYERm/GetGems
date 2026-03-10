@@ -112,16 +112,16 @@ export const TRADER_NAMES = [
 ];
 
 // ─── nftImage ─────────────────────────────────────────────────────────────────
-// С номером: PascalCase + номер → HeartLocket-694.webp
-// Без номера: lowercase slug → heartlocket.webp (fragment.com отдаёт оба варианта)
+// fragment.com всегда ожидает PascalCase без пробелов и апострофов:
+//   HappyBrownie.webp        (без номера)
+//   HeartLocket-694.webp     (с номером)
 export function nftImage(slug: string, num?: string): string {
+  const displayName = NFT_NAMES[slug] || slug;
+  const cleanName   = displayName.replace(/[^a-zA-Z0-9]/g, '');
   if (num && num.length > 0) {
-    const displayName = NFT_NAMES[slug] || slug;
-    const cleanName   = displayName.replace(/[^a-zA-Z0-9]/g, '');
     return `https://nft.fragment.com/gift/${cleanName}-${num}.webp`;
   }
-  // Без номера используем lowercase slug — так делает сам бот в thumbnail
-  return `https://nft.fragment.com/gift/${slug}.webp`;
+  return `https://nft.fragment.com/gift/${cleanName}.webp`;
 }
 
 // ─── parseGiftId ──────────────────────────────────────────────────────────────
