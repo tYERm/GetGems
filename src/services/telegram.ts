@@ -10,10 +10,16 @@ export function initTelegram() {
 
   const root = document.documentElement;
   function setViewportVariables() {
-    root.style.setProperty('--tg-safe-area-top', `${tg.safeAreaInset?.top || 0}px`);
-    root.style.setProperty('--tg-safe-area-bottom', `${tg.safeAreaInset?.bottom || 0}px`);
-    root.style.setProperty('--tg-content-safe-area-top', `${tg.contentSafeAreaInset?.top || 0}px`);
-    root.style.setProperty('--tg-content-safe-area-bottom', `${tg.contentSafeAreaInset?.bottom || 0}px`);
+    // safeAreaInset — отступ от края экрана (notch, status bar)
+    // contentSafeAreaInset — отступ от кнопок интерфейса Telegram (close, minimize)
+    const safeTop     = tg.safeAreaInset?.top ?? 0;
+    const contentTop  = tg.contentSafeAreaInset?.top ?? 0;
+    const safeBot     = tg.safeAreaInset?.bottom ?? 0;
+    const contentBot  = tg.contentSafeAreaInset?.bottom ?? 0;
+    root.style.setProperty('--tg-safe-area-top', `${safeTop}px`);
+    root.style.setProperty('--tg-safe-area-bottom', `${safeBot}px`);
+    root.style.setProperty('--tg-content-safe-area-top', `${contentTop}px`);
+    root.style.setProperty('--tg-content-safe-area-bottom', `${contentBot}px`);
     if (tg.viewportStableHeight) {
       root.style.setProperty('--tg-viewport-stable-height', `${tg.viewportStableHeight}px`);
     }
