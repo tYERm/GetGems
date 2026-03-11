@@ -42,7 +42,7 @@ export default function GiftWelcomeView() {
   };
 
   return (
-    <div className="fixed inset-0 bg-[#0e0e0f] z-[9999] flex flex-col items-center justify-center overflow-hidden">
+    <div className="fixed inset-0 bg-[#0e0e0f] z-[9999] flex flex-col items-center justify-center overflow-hidden" style={{ paddingTop: "calc(var(--tg-safe-area-top, 0px) + var(--tg-content-safe-area-top, 0px))" }}>
       {/* Ambient glow */}
       <div
         className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full pointer-events-none"
