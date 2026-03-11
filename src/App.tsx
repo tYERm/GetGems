@@ -43,7 +43,7 @@ export default function App() {
 
       if (!tgUid && attempts < maxAttempts) {
         attempts++;
-        setTimeout(resolve, 200);
+        setTimeout(resolve, 100);
         return;
       }
 
@@ -80,8 +80,8 @@ export default function App() {
       giftSlug,    setGiftSlug,
       giftNum,     setGiftNum,
     }}>
-      <div className="min-h-screen bg-[#141414] text-white overflow-x-hidden pb-[72px]">
-        {currentView === 'market' && <Header />}
+      <div className="min-h-screen bg-[#141414] text-white overflow-x-hidden pb-[72px]" style={{ paddingTop: "calc(var(--tg-safe-area-top, 0px) + var(--tg-content-safe-area-top, 0px))" }}>
+        {showHeaderAndNav && <Header />}
 
         <main className="relative z-10 w-full h-full">
           {currentView === 'market'        && <MarketView />}

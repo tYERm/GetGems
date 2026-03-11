@@ -5,6 +5,13 @@
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
 }
 
+:root {
+  --tg-safe-area-top: 0px;
+  --tg-safe-area-bottom: 0px;
+  --tg-content-safe-area-top: 0px;
+  --tg-content-safe-area-bottom: 0px;
+}
+
 body {
   font-family: var(--font-sans);
   background-color: #141414;
