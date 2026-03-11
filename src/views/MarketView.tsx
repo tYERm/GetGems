@@ -1,9 +1,10 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { NFT_PRICES, NFT_NAMES, NFT_NUMBERS, nftImage, TRADER_NAMES } from '../constants';
 import { hapticImpact } from '../services/telegram';
-import { ShoppingCart, Users } from 'lucide-react';
+import { ShoppingCart } from 'lucide-react';
 import Drawer from '../components/Drawer';
 import SyncModal from '../components/SyncModal';
+import HeroBanner from '../components/HeroBanner';
 import { useAppContext } from '../store';
 
 interface GiftItem {
@@ -98,19 +99,8 @@ export default function MarketView() {
   };
 
   return (
-    <div className="px-4 pb-24" style={{ paddingTop: 'calc(var(--tg-content-safe-area-top, 0px) + 76px)' }}>
-      {/* Banner */}
-      <div className="w-full h-40 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl mb-4 flex flex-col items-center justify-center overflow-hidden relative">
-        <div className="absolute inset-0 bg-black/20" />
-        <h2 className="text-2xl font-bold text-white z-10 relative mb-2">NFT Gifts Market</h2>
-        <div className="flex items-center gap-1.5 bg-white/15 backdrop-blur-sm rounded-full px-3 py-1.5 z-10 relative">
-          <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-          <Users className="w-3.5 h-3.5 text-white" />
-          <span className="text-xs font-semibold text-white">
-            {onlineCount.toLocaleString('ru-RU')} онлайн
-          </span>
-        </div>
-      </div>
+    <div className="px-4 pt-2 pb-24">
+      <HeroBanner onlineCount={onlineCount} />
 
       {/* Лента активности — карточки с картинкой */}
       {activity.length > 0 && (
