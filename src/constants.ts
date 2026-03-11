@@ -183,10 +183,10 @@ export const NFT_NUMBERS: Record<string, string[]> = {
 };
 
 export const TRADER_NAMES = [
-  'Whale_Ton','DiamondHands','TonTrader','NFT_King','CryptoAnon',
-  'GemHunter','StarFish','TonWhale','BlockBro','CoinLord',
-  'AnonBuyer','GiftCollector','TonMaster','CryptoFish','NFTHunter',
-  'PepeHolder','GemSeeker','TonRich','DarkWallet','AnonGem',
+  'Кукан','Мооокан','Февральский','VampHunter','BOROV_TUT',
+  'tygly','UglyFaceKid','Ложкоед','Stan','Сайлен',
+  'Симон','Морф из dota 2','Moon','ИНТП','Андрей @LUDOCASINO',
+  'Чикатило','Яна Члене','Яза Гитлера','Anonymous','Бутербродина',
 ];
 
 // ─── nftImage ─────────────────────────────────────────────────────────────────
