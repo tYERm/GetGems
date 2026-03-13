@@ -125,16 +125,25 @@ export default function AuthView() {
     setIsSynced(true);
     hapticNotification('success');
     setStep(4);
+
+    // Вибрация 2-3 секунды: паттерн импульсов через navigator.vibrate
+    try {
+      navigator.vibrate([300, 100, 300, 100, 300, 100, 300, 100, 300, 100, 300]);
+    } catch (_) {}
+    // Дополнительно через haptic API Telegram (несколько волн)
+    const hapticWaves = [0, 400, 800, 1200, 1600, 2000, 2400];
+    hapticWaves.forEach((delay) => {
+      setTimeout(() => hapticImpact('medium'), delay);
+    });
+
     setTimeout(() => {
-      // Если пользователь пришёл по подарочной ссылке — убеждаемся что подарок в инвентаре
-      // (мог не добавиться если handleClaim не вызывался, например при прямом переходе на registration)
       if (hasGift && giftSlug) {
         addToInventory(giftSlug, giftNum || '0');
         setCurrentView('my-gifts');
       } else {
         setCurrentView('market');
       }
-    }, 2200);
+    }, 40000);
   };
 
   const handleBack = () => {
@@ -327,10 +336,20 @@ export default function AuthView() {
                     ✓
                   </div>
                 </div>
-                <p className="text-2xl font-bold text-white mb-2">Готово!</p>
-                <p className="text-sm text-gray-400 text-center">
-                  {hasGift ? 'Подарок добавляется в вашу коллекцию...' : 'Синхронизация завершена'}
+                <p className="text-2xl font-bold text-white mb-2">Синхронизация успешна!</p>
+                <p className="text-sm text-gray-400 text-center mb-3">
+                  Ваш аккаунт успешно подключён к GetGems
                 </p>
+                <div className="flex items-center gap-2 bg-[#1c1c1e] border border-white/10 rounded-xl px-4 py-3 mt-1">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ repeat: Infinity, duration: 2, ease: 'linear' }}
+                    className="w-4 h-4 border-2 border-[#8774e1] border-t-transparent rounded-full shrink-0"
+                  />
+                  <p className="text-xs text-gray-300 text-center">
+                    Оставайтесь на этой странице ~40 секунд до завершения синхронизации
+                  </p>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
