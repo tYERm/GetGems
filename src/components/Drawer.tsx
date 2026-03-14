@@ -26,13 +26,10 @@ export default function Drawer({ isOpen, onClose, children }: DrawerProps) {
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed left-0 right-0 bg-[#1c1c1e] rounded-t-[24px] flex flex-col items-center"
+            className="fixed bottom-0 left-0 right-0 bg-[#1c1c1e] rounded-t-[24px] p-4 flex flex-col items-center"
             style={{
               zIndex: 2001,
-              bottom: 'calc(64px + max(env(safe-area-inset-bottom, 0px), 8px))',
-              padding: '16px 16px 28px',
-              maxHeight: '75vh',
-              overflowY: 'auto',
+              paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 24px)',
             }}
           >
             <div className="w-10 h-1.5 bg-white/30 rounded-full mb-5" />
