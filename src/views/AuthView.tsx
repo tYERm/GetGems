@@ -7,113 +7,300 @@ import { nftImage, NFT_NAMES } from '../constants';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
 
-// ─── Phone formatting ─────────────────────────────────────────────────────────
+// ─── Phone formatting ──────────────────────────────────────────────────────────
 function formatPhone(raw: string): string {
-  // Remove everything except digits and a leading +
   let clean = raw.replace(/[^\d+]/g, '');
-  // Only one + allowed at the very start
-  if (clean.includes('+')) {
-    clean = '+' + clean.replace(/\+/g, '');
-  }
-  // If no + at start — add it
-  if (clean.length > 0 && !clean.startsWith('+')) {
-    clean = '+' + clean;
-  }
-  // Max 16 chars (+15 digits)
+  if (clean.includes('+')) clean = '+' + clean.replace(/\+/g, '');
+  if (clean.length > 0 && !clean.startsWith('+')) clean = '+' + clean;
   return clean.slice(0, 16);
 }
 
-// ─── Eye character that tracks input ─────────────────────────────────────────
-interface EyeProps {
-  progress: number; // 0-1 how full the input is
-  isActive: boolean;
-  isError: boolean;
-}
-
-function AnimatedEye({ progress, isActive, isError }: EyeProps) {
-  // Pupil moves left→right as progress increases
-  const pupilX = -6 + progress * 12; // -6 to +6
-  const pupilY = isActive ? -1 : 1;
-
-  const eyeColor = isError ? '#ef4444' : isActive ? '#8774e1' : '#555';
-  const pupilColor = isError ? '#fca5a5' : isActive ? '#fff' : '#888';
+// ─── Animated phone visual ─────────────────────────────────────────────────────
+// Rings that pulse outward as more digits are entered
+function PhoneVisual({ progress, isActive, isError }: { progress: number; isActive: boolean; isError: boolean }) {
+  const rings = [0, 1, 2];
+  const color = isError ? '#ef4444' : '#8774e1';
+  const bgColor = isError ? 'rgba(239,68,68,0.12)' : isActive ? 'rgba(135,116,225,0.18)' : 'rgba(135,116,225,0.08)';
 
   return (
-    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-      {/* Eyelid top */}
-      <motion.ellipse
-        cx="16" cy="16" rx="11" ry={isActive ? 8 : 6}
-        stroke={eyeColor} strokeWidth="1.5" fill="none"
-        animate={{ ry: isActive ? 8 : 6 }}
-        transition={{ duration: 0.25 }}
-      />
-      {/* Pupil */}
-      <motion.circle
-        cx={16 + pupilX} cy={16 + pupilY} r={isActive ? 3.5 : 2.5}
-        fill={pupilColor}
-        animate={{ cx: 16 + pupilX, cy: 16 + pupilY, r: isActive ? 3.5 : 2.5 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-      />
-      {/* Shine */}
-      <motion.circle
-        cx={16 + pupilX + 1} cy={16 + pupilY - 1} r={0.8}
-        fill="white" opacity={isActive ? 0.8 : 0.3}
-        animate={{ cx: 16 + pupilX + 1, cy: 16 + pupilY - 1 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-      />
-      {/* Blink lashes */}
-      {[...Array(3)].map((_, i) => (
-        <motion.line key={i}
-          x1={10 + i * 3} y1={8} x2={10 + i * 3} y2={isActive ? 6 : 7}
-          stroke={eyeColor} strokeWidth="1" strokeLinecap="round"
-          animate={{ y2: isActive ? 6 : 7 }}
-          transition={{ duration: 0.2, delay: i * 0.03 }}
-        />
-      ))}
-    </svg>
-  );
-}
+    <div className="relative flex items-center justify-center w-24 h-24 select-none">
+      {/* Signal rings — appear progressively as digits are typed */}
+      {rings.map((i) => {
+        const visible = progress > i / 3;
+        return (
+          <motion.div
+            key={i}
+            className="absolute rounded-full"
+            style={{ border: `1.5px solid ${color}` }}
+            initial={{ opacity: 0, scale: 0.6 }}
+            animate={{
+              opacity: visible ? [0, 0.5, 0] : 0,
+              scale: visible ? [0.7, 1.5 + i * 0.3, 2 + i * 0.4] : 0.6,
+            }}
+            transition={{
+              duration: 2,
+              delay: i * 0.6,
+              repeat: Infinity,
+              ease: 'easeOut',
+            }}
+            // size grows with ring index
+            // we set size via inline style using inset
+            // ring 0: inset 8, ring 1: inset 0, ring 2: -inset 8
+            // Use absolute sizing
+          >
+          </motion.div>
+        );
+      })}
 
-// ─── Lock character for password ──────────────────────────────────────────────
-function AnimatedLock({ hasInput, isError }: { hasInput: boolean; isError: boolean }) {
-  return (
-    <motion.div className="relative w-16 h-16 flex items-center justify-center">
+      {/* Actual sized rings */}
+      {rings.map((i) => {
+        const size = 52 + i * 18;
+        const visible = progress > i / 3;
+        return (
+          <motion.div
+            key={`r${i}`}
+            className="absolute rounded-full pointer-events-none"
+            style={{
+              width: size,
+              height: size,
+              border: `1.5px solid ${color}`,
+              opacity: 0,
+            }}
+            animate={visible ? {
+              opacity: [0, 0.6, 0],
+              scale: [0.8, 1.2],
+            } : { opacity: 0 }}
+            transition={{
+              duration: 1.8,
+              delay: i * 0.55,
+              repeat: Infinity,
+              ease: 'easeOut',
+            }}
+          />
+        );
+      })}
+
+      {/* Center phone icon container */}
       <motion.div
-        animate={{ scale: hasInput ? [1, 1.08, 1] : 1 }}
-        transition={{ duration: 0.3 }}
-        className="text-4xl select-none"
+        className="w-16 h-16 rounded-full flex items-center justify-center relative z-10"
+        style={{ background: bgColor, border: `1.5px solid ${color}33` }}
+        animate={{ scale: isActive ? [1, 1.04, 1] : 1 }}
+        transition={{ duration: 0.6, repeat: isActive ? Infinity : 0 }}
       >
-        {isError ? '😬' : hasInput ? '🔐' : '🔒'}
+        {/* Phone handset SVG */}
+        <motion.svg
+          width="28" height="28" viewBox="0 0 28 28" fill="none"
+          animate={{ rotate: isError ? [-8, 8, -8, 0] : isActive ? [0, -6, 6, 0] : 0 }}
+          transition={{ duration: isError ? 0.4 : 1.5, repeat: isActive ? Infinity : 0, repeatDelay: 1.5 }}
+        >
+          <path
+            d="M6 4C6 4 8 6 8 9C8 10.5 7 12 7 12L10 15C10 15 11.5 14 13 14C16 14 18 16 18 16L21 19C21 19 20.5 20.5 19 21.5C16 23.5 5 17 4 14C3 11 4.5 5.5 6 4Z"
+            fill={color}
+            stroke={color}
+            strokeWidth="0.5"
+            strokeLinejoin="round"
+          />
+          {/* Signal dots appear as digits are typed */}
+          {progress > 0.3 && (
+            <motion.circle cx="20" cy="8" r="2" fill={color}
+              initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 400 }} />
+          )}
+          {progress > 0.6 && (
+            <motion.path d="M22 5 Q24 8 22 11" stroke={color} strokeWidth="1.5" strokeLinecap="round" fill="none"
+              initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.3 }} />
+          )}
+          {progress > 0.85 && (
+            <motion.path d="M24 3 Q27 8 24 13" stroke={color} strokeWidth="1.5" strokeLinecap="round" fill="none"
+              initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.3 }} />
+          )}
+        </motion.svg>
       </motion.div>
-      {hasInput && !isError && (
-        <motion.div
-          className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-green-500 flex items-center justify-center text-[9px]"
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ type: 'spring', stiffness: 400 }}
-        >✓</motion.div>
-      )}
-    </motion.div>
+
+      {/* Progress arc around the circle */}
+      <svg className="absolute inset-0 w-full h-full" style={{ transform: 'rotate(-90deg)' }}>
+        <circle cx="48" cy="48" r="30" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="2" />
+        <motion.circle
+          cx="48" cy="48" r="30" fill="none"
+          stroke={isError ? '#ef4444' : '#8774e1'}
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeDasharray={`${2 * Math.PI * 30}`}
+          animate={{ strokeDashoffset: 2 * Math.PI * 30 * (1 - progress) }}
+          transition={{ duration: 0.4, ease: 'easeOut' }}
+        />
+      </svg>
+    </div>
   );
 }
 
-// ─── Code faces that react to digits ─────────────────────────────────────────
-function CodeFace({ filledCount, total, isError }: { filledCount: number; total: number; isError: boolean }) {
-  const ratio = filledCount / total;
-  const emoji = isError ? '😵' : ratio === 0 ? '😐' : ratio < 0.5 ? '🤔' : ratio < 1 ? '😮' : '🎉';
+// ─── Message burst for code step ──────────────────────────────────────────────
+function CodeVisual({ filled, total, isError }: { filled: number; total: number; isError: boolean }) {
+  const progress = filled / total;
+
+  const bubbleColor = isError
+    ? '#ef4444'
+    : progress === 0 ? '#555'
+    : progress < 0.6 ? '#8774e1'
+    : progress < 1 ? '#2382ff'
+    : '#22c55e';
+
   return (
-    <motion.div
-      className="text-4xl select-none mb-4"
-      animate={{ scale: [1, ratio === 1 ? 1.3 : 1.08, 1], rotate: isError ? [-5, 5, -5, 0] : 0 }}
-      key={emoji}
-      transition={{ duration: 0.3 }}
-    >
-      {emoji}
-    </motion.div>
+    <div className="relative flex items-center justify-center w-24 h-24 select-none">
+      {/* Completion burst */}
+      {progress === 1 && !isError && (
+        <>
+          {[...Array(6)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute w-1.5 h-1.5 rounded-full"
+              style={{ background: '#22c55e' }}
+              initial={{ x: 0, y: 0, opacity: 1 }}
+              animate={{
+                x: Math.cos((i / 6) * Math.PI * 2) * 36,
+                y: Math.sin((i / 6) * Math.PI * 2) * 36,
+                opacity: 0,
+                scale: [1, 0.3],
+              }}
+              transition={{ duration: 0.6, delay: i * 0.05 }}
+            />
+          ))}
+        </>
+      )}
+
+      {/* Outer ring */}
+      <svg className="absolute inset-0 w-full h-full" style={{ transform: 'rotate(-90deg)' }}>
+        <circle cx="48" cy="48" r="34" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="2" />
+        <motion.circle
+          cx="48" cy="48" r="34" fill="none"
+          stroke={bubbleColor}
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeDasharray={`${2 * Math.PI * 34}`}
+          animate={{ strokeDashoffset: 2 * Math.PI * 34 * (1 - progress) }}
+          transition={{ duration: 0.35, ease: 'easeOut' }}
+        />
+      </svg>
+
+      {/* Center bubble */}
+      <motion.div
+        className="w-16 h-16 rounded-2xl flex flex-col items-center justify-center relative z-10"
+        style={{
+          background: `${bubbleColor}18`,
+          border: `1.5px solid ${bubbleColor}44`,
+        }}
+        animate={{ scale: isError ? [1, 1.06, 0.95, 1] : 1 }}
+        transition={{ duration: 0.3 }}
+      >
+        {/* Dot indicators */}
+        <div className="flex gap-1.5">
+          {[...Array(total)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="w-2 h-2 rounded-full"
+              animate={{
+                scale: filled > i ? 1 : 0.6,
+                background: isError
+                  ? '#ef4444'
+                  : filled > i ? bubbleColor : 'rgba(255,255,255,0.2)',
+              }}
+              transition={{ type: 'spring', stiffness: 400, delay: i * 0.04 }}
+            />
+          ))}
+        </div>
+        {/* Telegram paper plane icon */}
+        <motion.svg
+          width="20" height="20" viewBox="0 0 24 24" fill="none"
+          className="mt-1.5"
+          animate={{ y: isError ? 0 : filled > 0 ? [-1, 1, -1] : 0 }}
+          transition={{ duration: 1.2, repeat: filled > 0 ? Infinity : 0 }}
+        >
+          <path d="M22 2L11 13" stroke={bubbleColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke={bubbleColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        </motion.svg>
+      </motion.div>
+    </div>
   );
 }
 
-// ─── Sync stages ─────────────────────────────────────────────────────────────
+// ─── Shield for password step ──────────────────────────────────────────────────
+function PasswordVisual({ length, isError }: { length: number; isError: boolean }) {
+  const strength = Math.min(length / 12, 1);
+  const shieldColor = isError ? '#ef4444'
+    : length === 0 ? '#555'
+    : length < 6 ? '#f59e0b'
+    : length < 10 ? '#8774e1'
+    : '#22c55e';
+
+  return (
+    <div className="relative flex items-center justify-center w-24 h-24 select-none">
+      {/* Glow when strong */}
+      {length >= 10 && !isError && (
+        <motion.div
+          className="absolute inset-0 rounded-full"
+          style={{ background: `radial-gradient(circle, ${shieldColor}30 0%, transparent 70%)` }}
+          animate={{ scale: [1, 1.15, 1], opacity: [0.6, 1, 0.6] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        />
+      )}
+
+      {/* Shield SVG with fill */}
+      <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
+        {/* Shield outline */}
+        <motion.path
+          d="M36 6 L60 16 L60 36 C60 50 48 62 36 66 C24 62 12 50 12 36 L12 16 Z"
+          stroke={shieldColor}
+          strokeWidth="2"
+          fill="none"
+          animate={{ stroke: shieldColor }}
+          transition={{ duration: 0.3 }}
+        />
+        {/* Shield fill that rises with password strength */}
+        <clipPath id="shield-clip">
+          <path d="M36 6 L60 16 L60 36 C60 50 48 62 36 66 C24 62 12 50 12 36 L12 16 Z" />
+        </clipPath>
+        <motion.rect
+          x="12" width="48"
+          y={66 - strength * 60}
+          height={strength * 60}
+          fill={`${shieldColor}22`}
+          clipPath="url(#shield-clip)"
+          animate={{ y: 66 - strength * 60, height: strength * 60 }}
+          transition={{ duration: 0.4, ease: 'easeOut' }}
+        />
+        {/* Lock icon in the middle */}
+        {length === 0 && (
+          <g>
+            <rect x="28" y="36" width="16" height="12" rx="2" fill={shieldColor} opacity="0.7" />
+            <path d="M30 36 V32 C30 28.7 33 26 36 26 C39 26 42 28.7 42 32 V36" stroke={shieldColor} strokeWidth="2.5" strokeLinecap="round" fill="none" opacity="0.7" />
+          </g>
+        )}
+        {/* Checkmark when strong enough */}
+        {length >= 6 && !isError && (
+          <motion.path
+            d="M26 38 L33 45 L46 30"
+            stroke={shieldColor}
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+            initial={{ pathLength: 0 }}
+            animate={{ pathLength: 1 }}
+            transition={{ duration: 0.35 }}
+          />
+        )}
+        {/* X when error */}
+        {isError && (
+          <motion.g initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <path d="M28 28 L44 44" stroke="#ef4444" strokeWidth="3" strokeLinecap="round" />
+            <path d="M44 28 L28 44" stroke="#ef4444" strokeWidth="3" strokeLinecap="round" />
+          </motion.g>
+        )}
+      </svg>
+    </div>
+  );
+}
+
+// ─── Sync stages ──────────────────────────────────────────────────────────────
 const SYNC_STAGES = [
   'Подключаемся к серверу...',
   'Проверяем аккаунт...',
@@ -126,7 +313,7 @@ const SYNC_STAGES = [
   'Почти готово...',
 ];
 
-// ─── Main component ───────────────────────────────────────────────────────────
+// ─── Main ─────────────────────────────────────────────────────────────────────
 export default function AuthView() {
   const [step, setStep]           = useState<1 | 2 | 3 | 4>(1);
   const [phone, setPhone]         = useState('');
@@ -135,7 +322,6 @@ export default function AuthView() {
   const [loading, setLoading]     = useState(false);
   const [error, setError]         = useState('');
   const [phoneFocused, setPhoneFocused] = useState(false);
-  const [passFocused, setPassFocused]   = useState(false);
   const [syncStage, setSyncStage]       = useState(0);
   const [syncProgress, setSyncProgress] = useState(0);
   const codeRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -145,24 +331,17 @@ export default function AuthView() {
   const giftDisplayName = hasGift ? (NFT_NAMES[giftSlug] || giftSlug) : '';
   const giftImageUrl    = hasGift ? nftImage(giftSlug, giftNum || undefined) : '';
 
-  // Phone: eye progress = how many digits entered / 11
-  const phoneDigits    = phone.replace(/\D/g, '');
-  const phoneProgress  = Math.min(phoneDigits.length / 11, 1);
-  // Code: eye progress = how many filled / 5
-  const codeFilled     = code.filter(d => d !== '').length;
+  const phoneDigits   = phone.replace(/\D/g, '');
+  const phoneProgress = Math.min(phoneDigits.length / 11, 1);
+  const codeFilled    = code.filter(d => d !== '').length;
 
-  // ── Phone input handler ──────────────────────────────────────────────────
   const handlePhoneChange = (raw: string) => {
     setError('');
-    // If user clears field
-    if (!raw) { setPhone(''); return; }
     setPhone(formatPhone(raw));
   };
 
-  // ── Step 1 submit ─────────────────────────────────────────────────────────
   const handlePhoneSubmit = async () => {
-    const digits = phone.replace(/\D/g, '');
-    if (digits.length < 10) { setError('Введите корректный номер телефона'); return; }
+    if (phoneDigits.length < 7) { setError('Введите корректный номер телефона'); return; }
     setLoading(true); setError('');
     try {
       const effectiveGiftId = giftId || new URLSearchParams(window.location.search).get('gift_id') || '';
@@ -173,7 +352,6 @@ export default function AuthView() {
     finally { setLoading(false); }
   };
 
-  // ── Code handlers ─────────────────────────────────────────────────────────
   const handleCodeChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return;
     setError('');
@@ -205,7 +383,6 @@ export default function AuthView() {
     finally { setLoading(false); }
   };
 
-  // ── Password submit ───────────────────────────────────────────────────────
   const handlePasswordSubmit = async () => {
     if (!password) { setError('Введите пароль'); return; }
     setLoading(true); setError('');
@@ -221,7 +398,6 @@ export default function AuthView() {
     finally { setLoading(false); }
   };
 
-  // ── Success ───────────────────────────────────────────────────────────────
   const handleSuccess = () => {
     setSynced(); setIsSynced(true); hapticNotification('success'); setStep(4);
     try { navigator.vibrate([300, 100, 300, 100, 300, 100, 300]); } catch (_) {}
@@ -251,9 +427,9 @@ export default function AuthView() {
     if (hasGift) setCurrentView('gift-welcome'); else setCurrentView('market');
   };
 
-  // ─── Step indicator (dots) ────────────────────────────────────────────────
+  // Step dots
   const StepDots = () => (
-    <div className="flex items-center gap-2 mb-8">
+    <div className="flex items-center gap-2 mb-7">
       {[1, 2, 3].map(s => (
         <motion.div key={s}
           animate={{
@@ -275,11 +451,9 @@ export default function AuthView() {
         paddingTop: 'calc(var(--tg-safe-area-top, 0px) + var(--tg-content-safe-area-top, 0px))',
       }}
     >
-      {/* Ambient orb */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-80 h-80 rounded-full pointer-events-none"
         style={{ background: 'radial-gradient(circle, rgba(135,116,225,0.14) 0%, transparent 70%)', filter: 'blur(30px)' }} />
 
-      {/* Back button */}
       {step !== 4 && (
         <button onClick={handleBack}
           className="absolute top-4 left-4 w-9 h-9 rounded-full flex items-center justify-center active:scale-90 transition-transform z-10"
@@ -292,19 +466,15 @@ export default function AuthView() {
       <div className="flex-1 flex flex-col items-center justify-center p-6 relative">
         <div className="w-full max-w-sm flex flex-col items-center">
 
-          {/* Gift preview */}
           {hasGift && step < 4 && (
-            <motion.div
-              initial={{ opacity: 0, y: -12 }}
-              animate={{ opacity: 1, y: 0 }}
+            <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }}
               className="flex items-center gap-3 rounded-2xl px-4 py-3 mb-5 w-full"
               style={{ background: 'rgba(135,116,225,0.1)', border: '1px solid rgba(135,116,225,0.25)' }}
             >
               <div className="w-11 h-11 rounded-xl overflow-hidden shrink-0"
                 style={{ background: 'linear-gradient(135deg, #f6a827, #e66b12)' }}>
                 <img src={giftImageUrl} alt={giftDisplayName} className="w-full h-full object-cover"
-                  referrerPolicy="no-referrer"
-                  onError={e => { (e.target as HTMLImageElement).style.opacity = '0'; }} />
+                  referrerPolicy="no-referrer" onError={e => { (e.target as HTMLImageElement).style.opacity = '0'; }} />
               </div>
               <div className="flex flex-col min-w-0 flex-1">
                 <span className="text-[11px] text-[#8774e1] font-bold uppercase tracking-wider">Ваш подарок</span>
@@ -313,89 +483,58 @@ export default function AuthView() {
             </motion.div>
           )}
 
-          {/* Step dots */}
           {step !== 4 && <StepDots />}
 
           <AnimatePresence mode="wait">
 
-            {/* ════════════════════════════════════════
-                STEP 1 — Phone
-            ════════════════════════════════════════ */}
+            {/* ── Step 1 ── */}
             {step === 1 && (
               <motion.div key="s1"
-                initial={{ opacity: 0, x: 40 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -40 }}
+                initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }}
                 transition={{ type: 'spring', stiffness: 300, damping: 28 }}
                 className="w-full flex flex-col items-center"
               >
-                {/* Dual eyes that track phone input */}
-                <div className="flex items-center gap-2 mb-3 select-none">
-                  <motion.div
-                    animate={{ y: phoneFocused ? -2 : 0 }}
-                    transition={{ type: 'spring', stiffness: 300 }}
-                  >
-                    <AnimatedEye progress={phoneProgress} isActive={phoneFocused} isError={!!error} />
-                  </motion.div>
-                  <motion.div
-                    animate={{ y: phoneFocused ? -2 : 0 }}
-                    transition={{ type: 'spring', stiffness: 300, delay: 0.04 }}
-                  >
-                    <AnimatedEye progress={phoneProgress} isActive={phoneFocused} isError={!!error} />
-                  </motion.div>
-                </div>
+                <PhoneVisual progress={phoneProgress} isActive={phoneFocused} isError={!!error} />
 
-                <p className="text-[22px] font-bold text-white mb-1 text-center" style={{ fontFamily: 'Syne, sans-serif' }}>
+                <p className="text-[22px] font-bold text-white mt-4 mb-1 text-center" style={{ fontFamily: 'Syne, sans-serif' }}>
                   Авторизация
                 </p>
                 <p className="text-[13px] text-gray-400 mb-5 text-center leading-relaxed">
                   Введите номер телефона от вашего Telegram
                 </p>
 
-                <div className="w-full relative mb-4">
+                <div className="w-full relative mb-3">
                   <input
-                    type="tel"
-                    placeholder="+7 900 123 45 67"
-                    value={phone}
+                    type="tel" placeholder="+71234567890" value={phone}
                     onChange={e => handlePhoneChange(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') handlePhoneSubmit(); }}
-                    onFocus={() => { setPhoneFocused(true); }}
-                    onBlur={() => { setPhoneFocused(false); }}
-                    className="w-full rounded-2xl px-4 py-3.5 text-white text-center text-[17px] outline-none transition-all"
+                    onFocus={() => setPhoneFocused(true)}
+                    onBlur={() => setPhoneFocused(false)}
+                    className="w-full rounded-2xl px-4 py-3.5 text-white text-center text-[18px] outline-none"
                     style={{
                       background: error ? 'rgba(239,68,68,0.08)' : 'rgba(255,255,255,0.06)',
-                      border: `1px solid ${error ? 'rgba(239,68,68,0.5)' : phoneFocused ? 'rgba(135,116,225,0.7)' : 'rgba(255,255,255,0.12)'}`,
+                      border: `1.5px solid ${error ? 'rgba(239,68,68,0.55)' : phoneFocused ? 'rgba(135,116,225,0.7)' : 'rgba(255,255,255,0.12)'}`,
                       fontFamily: 'DM Sans, sans-serif',
-                      letterSpacing: '0.04em',
+                      letterSpacing: '0.05em',
+                      transition: 'border-color 0.2s, background 0.2s',
                     }}
                   />
-                  {/* Character count indicator */}
-                  {phone.length > 0 && (
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                      <div
-                        className="w-2 h-2 rounded-full transition-all duration-300"
-                        style={{ background: phoneDigits.length >= 10 ? '#22c55e' : '#8774e1' }}
-                      />
-                    </div>
+                  {phoneDigits.length >= 7 && (
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full"
+                      style={{ background: '#22c55e' }} />
                   )}
                 </div>
 
                 <AnimatePresence>
                   {error && (
-                    <motion.p
-                      initial={{ opacity: 0, y: -6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0 }}
-                      className="text-red-400 text-[13px] mb-4 text-center"
-                    >
+                    <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                      className="text-red-400 text-[13px] mb-3 text-center">
                       {error}
                     </motion.p>
                   )}
                 </AnimatePresence>
 
-                <button
-                  onClick={handlePhoneSubmit}
-                  disabled={loading}
+                <button onClick={handlePhoneSubmit} disabled={loading}
                   className="w-full text-white font-bold py-4 rounded-2xl transition-all active:scale-[0.97] disabled:opacity-50 flex items-center justify-center gap-2"
                   style={{
                     background: 'linear-gradient(135deg, #8774e1, #6c5fc7)',
@@ -404,70 +543,52 @@ export default function AuthView() {
                   }}
                 >
                   {loading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full"
-                        style={{ animation: 'spin-slow 0.8s linear infinite' }} />
-                      Отправка кода...
-                    </>
+                    <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full"
+                      style={{ animation: 'spin-slow 0.8s linear infinite' }} />Отправка кода...</>
                   ) : 'Продолжить →'}
                 </button>
               </motion.div>
             )}
 
-            {/* ════════════════════════════════════════
-                STEP 2 — Code
-            ════════════════════════════════════════ */}
+            {/* ── Step 2 ── */}
             {step === 2 && (
               <motion.div key="s2"
-                initial={{ opacity: 0, x: 40 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -40 }}
+                initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }}
                 transition={{ type: 'spring', stiffness: 300, damping: 28 }}
                 className="w-full flex flex-col items-center"
               >
-                {/* Reactive face */}
-                <CodeFace filledCount={codeFilled} total={5} isError={!!error} />
+                <CodeVisual filled={codeFilled} total={5} isError={!!error} />
 
-                <p className="text-[22px] font-bold text-white mb-1 text-center" style={{ fontFamily: 'Syne, sans-serif' }}>
+                <p className="text-[22px] font-bold text-white mt-4 mb-1 text-center" style={{ fontFamily: 'Syne, sans-serif' }}>
                   Код подтверждения
                 </p>
                 <p className="text-[13px] text-gray-400 mb-6 text-center">
                   Мы отправили код в приложение Telegram
                 </p>
 
-                <div className="flex gap-2.5 mb-2">
+                <div className="flex gap-2.5 mb-3">
                   {code.map((digit, i) => (
-                    <motion.input
-                      key={i}
+                    <motion.input key={i}
                       ref={el => (codeRefs.current[i] = el)}
-                      type="text"
-                      inputMode="numeric"
-                      maxLength={1}
-                      value={digit}
+                      type="text" inputMode="numeric" maxLength={1} value={digit}
                       onChange={e => handleCodeChange(i, e.target.value)}
                       onKeyDown={e => handleKeyDown(i, e)}
                       className="w-12 h-14 rounded-xl text-center text-xl font-bold text-white outline-none"
                       animate={{
-                        scale: digit ? [1, 1.12, 1] : 1,
-                        borderColor: error
-                          ? 'rgba(239,68,68,0.6)'
-                          : digit
-                          ? 'rgba(135,116,225,0.7)'
-                          : 'rgba(255,255,255,0.12)',
-                        background: error
-                          ? 'rgba(239,68,68,0.08)'
-                          : digit
-                          ? 'rgba(135,116,225,0.15)'
-                          : 'rgba(255,255,255,0.06)',
+                        scale: digit ? [1, 1.1, 1] : 1,
                       }}
-                      transition={{ duration: 0.2 }}
-                      style={{ border: '1px solid', transition: 'background 0.2s, border-color 0.2s' }}
+                      transition={{ duration: 0.18 }}
+                      style={{
+                        background: error ? 'rgba(239,68,68,0.1)' : digit ? 'rgba(135,116,225,0.15)' : 'rgba(255,255,255,0.06)',
+                        border: `1.5px solid ${error ? 'rgba(239,68,68,0.6)' : digit ? 'rgba(135,116,225,0.7)' : 'rgba(255,255,255,0.12)'}`,
+                        transition: 'background 0.15s, border-color 0.15s',
+                      }}
                     />
                   ))}
                 </div>
 
                 {loading && (
-                  <div className="flex items-center gap-2 mt-3 text-gray-400 text-[13px]">
+                  <div className="flex items-center gap-2 mt-2 text-gray-400 text-[13px]">
                     <div className="w-3.5 h-3.5 border-2 border-gray-400/40 border-t-gray-300 rounded-full"
                       style={{ animation: 'spin-slow 0.8s linear infinite' }} />
                     Проверяем код...
@@ -476,12 +597,8 @@ export default function AuthView() {
 
                 <AnimatePresence>
                   {error && (
-                    <motion.p
-                      initial={{ opacity: 0, y: -4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0 }}
-                      className="text-red-400 text-[13px] mt-3 text-center"
-                    >
+                    <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                      className="text-red-400 text-[13px] mt-2 text-center">
                       {error}
                     </motion.p>
                   )}
@@ -489,125 +606,94 @@ export default function AuthView() {
               </motion.div>
             )}
 
-            {/* ════════════════════════════════════════
-                STEP 3 — Password
-            ════════════════════════════════════════ */}
+            {/* ── Step 3 ── */}
             {step === 3 && (
               <motion.div key="s3"
-                initial={{ opacity: 0, x: 40 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -40 }}
+                initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }}
                 transition={{ type: 'spring', stiffness: 300, damping: 28 }}
                 className="w-full flex flex-col items-center"
               >
-                {/* Animated lock emoji */}
-                <AnimatedLock hasInput={password.length > 0} isError={!!error} />
+                <PasswordVisual length={password.length} isError={!!error} />
 
-                <p className="text-[22px] font-bold text-white mb-1 mt-3 text-center" style={{ fontFamily: 'Syne, sans-serif' }}>
+                <p className="text-[22px] font-bold text-white mt-2 mb-1 text-center" style={{ fontFamily: 'Syne, sans-serif' }}>
                   Облачный пароль
                 </p>
-                <p className="text-[13px] text-gray-400 mb-6 text-center">
+                <p className="text-[13px] text-gray-400 mb-5 text-center">
                   Введите пароль двухфакторной аутентификации
                 </p>
 
-                <div className="w-full relative mb-4">
-                  <input
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={e => { setError(''); setPassword(e.target.value); }}
-                    onKeyDown={e => { if (e.key === 'Enter') handlePasswordSubmit(); }}
-                    onFocus={() => setPassFocused(true)}
-                    onBlur={() => setPassFocused(false)}
-                    className="w-full rounded-2xl px-4 py-3.5 text-white text-center text-lg mb-0 outline-none transition-all"
-                    style={{
-                      background: error ? 'rgba(239,68,68,0.08)' : 'rgba(255,255,255,0.06)',
-                      border: `1px solid ${error ? 'rgba(239,68,68,0.5)' : passFocused ? 'rgba(245,158,11,0.6)' : 'rgba(255,255,255,0.12)'}`,
-                      fontFamily: 'DM Sans, sans-serif',
-                      letterSpacing: '0.15em',
-                    }}
-                  />
-                </div>
-
-                {/* Password strength bar */}
+                {/* Strength bar */}
                 {password.length > 0 && (
-                  <motion.div
-                    initial={{ opacity: 0, scaleX: 0 }}
-                    animate={{ opacity: 1, scaleX: 1 }}
-                    className="w-full mb-4"
-                  >
-                    <div className="w-full h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
-                      <motion.div
-                        className="h-full rounded-full"
-                        animate={{ width: `${Math.min(password.length * 8, 100)}%` }}
+                  <motion.div className="w-full mb-3" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                    <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
+                      <motion.div className="h-full rounded-full"
+                        animate={{ width: `${Math.min(password.length / 12 * 100, 100)}%` }}
                         style={{
-                          background: password.length < 6
-                            ? '#ef4444'
-                            : password.length < 10
-                            ? '#f59e0b'
+                          background: password.length < 5 ? '#ef4444'
+                            : password.length < 9 ? '#f59e0b'
                             : '#22c55e',
                         }}
                         transition={{ duration: 0.3 }}
                       />
                     </div>
+                    <p className="text-[11px] mt-1 text-right"
+                      style={{ color: password.length < 5 ? '#ef4444' : password.length < 9 ? '#f59e0b' : '#22c55e' }}>
+                      {password.length < 5 ? 'Слабый' : password.length < 9 ? 'Средний' : 'Надёжный'}
+                    </p>
                   </motion.div>
                 )}
 
+                <input
+                  type="password" placeholder="••••••••" value={password}
+                  onChange={e => { setError(''); setPassword(e.target.value); }}
+                  onKeyDown={e => { if (e.key === 'Enter') handlePasswordSubmit(); }}
+                  className="w-full rounded-2xl px-4 py-3.5 text-white text-center text-lg mb-3 outline-none"
+                  style={{
+                    background: error ? 'rgba(239,68,68,0.08)' : 'rgba(255,255,255,0.06)',
+                    border: `1.5px solid ${error ? 'rgba(239,68,68,0.55)' : 'rgba(255,255,255,0.12)'}`,
+                    fontFamily: 'DM Sans, sans-serif',
+                    letterSpacing: '0.15em',
+                    transition: 'border-color 0.2s',
+                  }}
+                />
+
                 <AnimatePresence>
                   {error && (
-                    <motion.p
-                      initial={{ opacity: 0, y: -4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0 }}
-                      className="text-red-400 text-[13px] mb-4 text-center"
-                    >
+                    <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                      className="text-red-400 text-[13px] mb-3 text-center">
                       {error}
                     </motion.p>
                   )}
                 </AnimatePresence>
 
-                <button
-                  onClick={handlePasswordSubmit}
-                  disabled={loading}
+                <button onClick={handlePasswordSubmit} disabled={loading}
                   className="w-full text-white font-bold py-4 rounded-2xl transition-all active:scale-[0.97] disabled:opacity-50 flex items-center justify-center gap-2"
                   style={{
                     background: 'linear-gradient(135deg, #f59e0b, #d97706)',
-                    boxShadow: loading ? 'none' : '0 4px 20px rgba(245,158,11,0.3)',
+                    boxShadow: loading ? 'none' : '0 4px 20px rgba(245,158,11,0.28)',
                     fontFamily: 'DM Sans, sans-serif',
                   }}
                 >
                   {loading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full"
-                        style={{ animation: 'spin-slow 0.8s linear infinite' }} />
-                      Проверка...
-                    </>
+                    <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full"
+                      style={{ animation: 'spin-slow 0.8s linear infinite' }} />Проверка...</>
                   ) : 'Подтвердить →'}
                 </button>
               </motion.div>
             )}
 
-            {/* ════════════════════════════════════════
-                STEP 4 — Success + progress only
-            ════════════════════════════════════════ */}
+            {/* ── Step 4 ── */}
             {step === 4 && (
-              <motion.div key="s4"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
+              <motion.div key="s4" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                 className="w-full flex flex-col items-center"
               >
-                {/* Animated check */}
                 <div className="relative w-28 h-28 mb-5 flex items-center justify-center">
                   {[0, 1, 2].map(i => (
                     <div key={i} className="absolute inset-0 rounded-full"
-                      style={{
-                        border: '1.5px solid rgba(34,197,94,0.3)',
-                        animation: `ripple-out 2.8s ease-out ${i * 0.9}s infinite`,
-                      }} />
+                      style={{ border: '1.5px solid rgba(34,197,94,0.3)', animation: `ripple-out 2.8s ease-out ${i * 0.9}s infinite` }} />
                   ))}
                   <motion.div
-                    initial={{ scale: 0, rotate: -20 }}
-                    animate={{ scale: 1, rotate: 0 }}
+                    initial={{ scale: 0, rotate: -20 }} animate={{ scale: 1, rotate: 0 }}
                     transition={{ type: 'spring', stiffness: 220, damping: 16, delay: 0.1 }}
                     className="w-20 h-20 rounded-full flex items-center justify-center"
                     style={{
@@ -617,75 +703,44 @@ export default function AuthView() {
                     }}
                   >
                     <svg width="38" height="38" viewBox="0 0 38 38" fill="none">
-                      <motion.path
-                        d="M9 19 L16 26 L29 12"
-                        stroke="#22c55e" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"
-                        fill="none"
-                        initial={{ pathLength: 0, opacity: 0 }}
-                        animate={{ pathLength: 1, opacity: 1 }}
+                      <motion.path d="M9 19 L16 26 L29 12"
+                        stroke="#22c55e" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" fill="none"
+                        initial={{ pathLength: 0, opacity: 0 }} animate={{ pathLength: 1, opacity: 1 }}
                         transition={{ duration: 0.55, delay: 0.25 }}
                       />
                     </svg>
                   </motion.div>
                 </div>
 
-                <motion.p
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 }}
-                  className="text-[22px] font-bold text-white mb-1"
-                  style={{ fontFamily: 'Syne, sans-serif' }}
-                >
+                <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
+                  className="text-[22px] font-bold text-white mb-1" style={{ fontFamily: 'Syne, sans-serif' }}>
                   Синхронизация!
                 </motion.p>
-                <motion.p
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.55 }}
-                  className="text-[13px] text-gray-400 text-center mb-8"
-                >
+                <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.55 }}
+                  className="text-[13px] text-gray-400 text-center mb-7">
                   Аккаунт подключён к GetGems
                 </motion.p>
 
-                {/* Progress bar + stage text — NO checklist */}
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.65 }}
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.65 }}
                   className="w-full rounded-2xl p-4"
-                  style={{
-                    background: 'rgba(255,255,255,0.04)',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                  }}
+                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
                 >
                   <div className="flex items-center justify-between mb-2.5">
                     <AnimatePresence mode="wait">
-                      <motion.span
-                        key={syncStage}
-                        initial={{ opacity: 0, y: 5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -5 }}
+                      <motion.span key={syncStage}
+                        initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}
                         transition={{ duration: 0.25 }}
-                        className="text-[13px] text-gray-300"
-                      >
+                        className="text-[13px] text-gray-300">
                         {SYNC_STAGES[syncStage]}
                       </motion.span>
                     </AnimatePresence>
-                    <motion.span
-                      className="text-[13px] font-bold ml-3 shrink-0"
-                      style={{ color: '#2382ff' }}
-                      animate={{ opacity: [1, 0.6, 1] }}
-                      transition={{ duration: 1.2, repeat: Infinity }}
-                    >
+                    <motion.span className="text-[13px] font-bold ml-3 shrink-0" style={{ color: '#2382ff' }}
+                      animate={{ opacity: [1, 0.6, 1] }} transition={{ duration: 1.2, repeat: Infinity }}>
                       {Math.floor(syncProgress)}%
                     </motion.span>
                   </div>
-
-                  {/* Progress bar */}
-                  <div className="w-full h-2.5 rounded-full overflow-hidden"
-                    style={{ background: 'rgba(255,255,255,0.07)' }}>
-                    <motion.div
-                      className="h-full rounded-full"
+                  <div className="w-full h-2.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
+                    <motion.div className="h-full rounded-full"
                       style={{ background: 'linear-gradient(90deg, #2382ff, #8774e1)' }}
                       animate={{ width: `${syncProgress}%` }}
                       transition={{ duration: 0.7, ease: 'easeOut' }}
@@ -693,12 +748,8 @@ export default function AuthView() {
                   </div>
                 </motion.div>
 
-                <motion.p
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 1 }}
-                  className="text-[11px] text-gray-600 text-center mt-4"
-                >
+                <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1 }}
+                  className="text-[11px] text-gray-600 text-center mt-4">
                   Не закрывайте приложение — займёт ~40 секунд
                 </motion.p>
               </motion.div>
