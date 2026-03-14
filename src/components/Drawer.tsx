@@ -9,7 +9,6 @@ interface DrawerProps {
 
 export default function Drawer({ isOpen, onClose, children }: DrawerProps) {
   return (
-    // Drawer перекрывает BottomNav и Header полностью через inline zIndex
     <AnimatePresence>
       {isOpen && (
         <>
@@ -18,27 +17,41 @@ export default function Drawer({ isOpen, onClose, children }: DrawerProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm"
-            style={{ zIndex: 2000 }}
+            className="fixed inset-0 bg-black/75"
+            style={{ zIndex: 2000, backdropFilter: 'blur(6px)' }}
           />
           <motion.div
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed bottom-0 left-0 right-0 bg-[#1c1c1e] rounded-t-[24px] p-4 flex flex-col items-center"
+            transition={{ type: 'spring', damping: 26, stiffness: 220 }}
+            className="fixed left-0 right-0 flex flex-col items-center"
             style={{
               zIndex: 2001,
-              paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 24px)',
+              bottom: 0,
+              background: 'linear-gradient(180deg, #1e1e22 0%, #18181c 100%)',
+              borderTop: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: '24px 24px 0 0',
+              // pad bottom = nav height (64px) + safe area so buttons are never hidden
+              paddingBottom: 'calc(72px + max(env(safe-area-inset-bottom, 0px), 8px))',
+              paddingTop: '16px',
+              paddingLeft: '16px',
+              paddingRight: '16px',
             }}
           >
-            <div className="w-10 h-1.5 bg-white/30 rounded-full mb-5" />
+            {/* Handle */}
+            <div className="w-10 h-1.5 rounded-full mb-4 shrink-0"
+              style={{ background: 'rgba(255,255,255,0.2)' }} />
+
+            {/* Close button */}
             <button
               onClick={onClose}
-              className="absolute top-4 right-4 w-8 h-8 bg-[#2c2c2e] rounded-full flex items-center justify-center text-white"
+              className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-transform"
+              style={{ background: 'rgba(255,255,255,0.08)' }}
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4 text-white" />
             </button>
+
             {children}
           </motion.div>
         </>
