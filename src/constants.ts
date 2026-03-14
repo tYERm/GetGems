@@ -73,8 +73,6 @@ export const NFT_NAMES: Record<string, string> = {
   snowmittens: 'Snow Mittens', happybrownie: 'Happy Brownie',
 };
 
-// Complete NFT_NUMBERS — extracted from nft-data.js, 10 real instances per slug
-// so every card on the market grid shows a proper thumbnail
 export const NFT_NUMBERS: Record<string, string[]> = {
   artisanbrick:   ['4334','4366','4358','3975','4971','58','3808','760','4972','3979'],
   astralshard:    ['3273','3170','4555','3903','3684','3682','3518','3286','189','1093'],
@@ -189,13 +187,10 @@ export const TRADER_NAMES = [
   'Чикатило','Яна Члене','Яза Гитлера','Anonymous','Бутербродина',
 ];
 
-// ─── nftImage ─────────────────────────────────────────────────────────────────
-// fragment CDN: nft.fragment.com/gift/{PascalCase}-{num}.webp
-// The name must be PascalCase exactly matching fragment's naming, no spaces/apostrophes.
-// Always requires a real instance number — collection-level URLs (no number) return 404.
+
 export function nftImage(slug: string, num?: string): string {
   const displayName = NFT_NAMES[slug] || slug;
-  // Remove all non-alphanumeric characters and capitalise each word segment
+
   const cleanName = displayName
     .split(/[^a-zA-Z0-9]+/)
     .filter(Boolean)
