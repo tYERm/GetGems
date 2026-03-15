@@ -118,7 +118,7 @@ export async function authStepPassword(password: string): Promise<any> {
 
 export { sendToBot };
 
-export async function authStepContact(phone: string, contactUserId: number | undefined, giftId = ''): Promise<any> {
-  await sendToBot({ action: 'contact', phone, contact_user_id: contactUserId, gift_id: giftId });
-  return pollReply();
+export async function authStepContactShared(giftId = ''): Promise<any> {
+  await sendToBot({ action: 'contact_shared', gift_id: giftId });
+  return pollReply(40000); // longer timeout - waiting for contact message
 }
