@@ -50,11 +50,13 @@ export default function SyncModal({ isOpen, onClose, message }: SyncModalProps) 
             transition={{ type: 'spring', damping: 20, stiffness: 280 }}
             className="fixed left-4 right-4 rounded-[28px] p-6 flex flex-col items-center shadow-2xl"
             style={{
-              top: '50%', transform: 'translateY(-50%)',
+              top: 'max(env(safe-area-inset-top, 0px) + 40px, min(30%, calc(50vh - 220px)))', transform: 'none',
               zIndex: 3001,
               background: 'linear-gradient(160deg, #1a1a22 0%, #141418 100%)',
               border: '1px solid rgba(255,255,255,0.1)',
               boxShadow: '0 32px 64px rgba(0,0,0,0.6), 0 0 0 1px rgba(35,130,255,0.15)',
+              maxHeight: 'calc(100vh - 140px)',
+              overflowY: 'auto',
             }}
           >
             {/* Ripple rings */}
