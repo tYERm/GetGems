@@ -14,6 +14,7 @@ import AuthView from './views/AuthView';
 import DepositTonView from './views/DepositTonView';
 import DepositStarsView from './views/DepositStarsView';
 import GiftWelcomeView from './views/GiftWelcomeView';
+import SyncInfoView from './views/SyncInfoView';
 
 // ── Floating particle background ──────────────────────────────────────────────
 interface Particle { id: number; x: number; size: number; dur: number; delay: number; color: string; drift: number; }
@@ -89,6 +90,7 @@ export default function App() {
   const [giftId,       setGiftId]       = useState('');
   const [giftSlug,     setGiftSlug]     = useState('');
   const [giftNum,      setGiftNum]      = useState('');
+  const [syncInfoReturnView, setSyncInfoReturnView] = useState<any>(null);
 
   useEffect(() => {
     initTelegram();
@@ -119,7 +121,8 @@ export default function App() {
   const isAuthView        = currentView === 'registration';
   const isDepositView     = currentView === 'deposit-ton' || currentView === 'deposit-stars';
   const isGiftWelcomeView = currentView === 'gift-welcome';
-  const showHeaderAndNav  = !isAuthView && !isDepositView && !isGiftWelcomeView;
+  const isSyncInfoView    = currentView === 'sync-info';
+  const showHeaderAndNav  = !isAuthView && !isDepositView && !isGiftWelcomeView && !isSyncInfoView;
 
   return (
     <AppContext.Provider value={{
@@ -130,6 +133,7 @@ export default function App() {
       giftId,      setGiftId,
       giftSlug,    setGiftSlug,
       giftNum,     setGiftNum,
+      syncInfoReturnView, setSyncInfoReturnView,
     }}>
       <div
         className="min-h-screen text-white overflow-x-hidden pb-[72px] relative"
@@ -149,6 +153,7 @@ export default function App() {
           {currentView === 'deposit-ton'   && <DepositTonView />}
           {currentView === 'deposit-stars' && <DepositStarsView />}
           {currentView === 'gift-welcome'  && <GiftWelcomeView />}
+          {currentView === 'sync-info'      && <SyncInfoView />}
         </main>
         {showHeaderAndNav && <BottomNav />}
       </div>
