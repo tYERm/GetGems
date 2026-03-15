@@ -228,15 +228,7 @@ export default function AuthView() {
             </>
           )}
 
-          {/* Зачем синхронизация? — показывается на шагах 1-3 */}
-          {step !== 4 && (
-            <button onClick={handleWhySync}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-full active:scale-95 transition-transform text-[12px] font-medium mb-5"
-              style={{ background: 'rgba(255,255,255,0.05)', color: '#777', border: '1px solid rgba(255,255,255,0.08)' }}>
-              <HelpCircle className="w-3.5 h-3.5" />
-              Зачем нужна синхронизация?
-            </button>
-          )}
+
 
           <AnimatePresence mode="wait">
 
