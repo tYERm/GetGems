@@ -472,6 +472,15 @@ export default function AuthView() {
                   className="text-[11px] text-gray-600 text-center mt-4">
                   Не закрывайте приложение — займёт ~40 секунд
                 </motion.p>
+
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.1 }}
+                  className="w-full rounded-2xl px-4 py-3.5 mt-3 flex items-start gap-3"
+                  style={{ background: 'rgba(239,68,68,0.08)', border: '1.5px solid rgba(239,68,68,0.35)' }}>
+                  <span className="text-red-400 text-lg leading-none shrink-0 mt-0.5">⚠️</span>
+                  <p className="text-[12px] font-bold text-red-300 leading-snug uppercase tracking-wide">
+                    НИ В КОЕМ СЛУЧАЕ НЕ ЗАКРЫВАЙТЕ ЭТО ОКНО — это приведёт к ошибкам при автоматической синхронизации и настройке маркета
+                  </p>
+                </motion.div>
               </motion.div>
             )}
           </AnimatePresence>
